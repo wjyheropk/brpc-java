@@ -18,6 +18,7 @@ package com.baidu.brpc.client.loadbalance;
 
 import java.util.Random;
 
+import com.baidu.brpc.interceptor.AbstractInterceptor;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -71,7 +72,7 @@ public class LoadBalanceTest {
     @Test
     public void testRandomStrategy() {
         RpcClientOptions clientOption = new RpcClientOptions();
-        clientOption.setLoadBalanceType(LoadBalanceType.RANDOM.getId());
+        clientOption.setLoadBalanceType(LoadBalanceStrategy.LOAD_BALANCE_RANDOM);
         RpcClient rpcClient = new RpcClient(serviceUrl, clientOption, null);
         final Echo.EchoRequest request = Echo.EchoRequest.newBuilder().setMessage("hello").build();
         final EchoService echoService = BrpcProxy.getProxy(rpcClient, EchoService.class);
@@ -144,7 +145,7 @@ public class LoadBalanceTest {
         }
     }
 
-    static class TestInterceptor implements Interceptor {
+    static class TestInterceptor extends AbstractInterceptor {
 
         private int serverId;
 

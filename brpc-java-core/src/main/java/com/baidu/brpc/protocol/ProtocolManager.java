@@ -21,6 +21,8 @@ import com.baidu.brpc.protocol.hulu.HuluRpcProtocol;
 import com.baidu.brpc.protocol.nshead.NSHeadRpcProtocol;
 import com.baidu.brpc.protocol.sofa.SofaRpcProtocol;
 import com.baidu.brpc.protocol.standard.BaiduRpcProtocol;
+import com.baidu.brpc.protocol.stargate.StargateRpcProtocol;
+import lombok.Getter;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -65,6 +67,8 @@ public class ProtocolManager {
                     new HttpRpcProtocol(Options.ProtocolType.PROTOCOL_HTTP_PROTOBUF_VALUE, encoding));
             protocolMap.put(Options.ProtocolType.PROTOCOL_NSHEAD_PROTOBUF_VALUE,
                     new NSHeadRpcProtocol(Options.ProtocolType.PROTOCOL_NSHEAD_PROTOBUF_VALUE, encoding));
+            protocolMap.put(Options.ProtocolType.PROTOCOL_NSHEAD_JSON_VALUE,
+                    new NSHeadRpcProtocol(Options.ProtocolType.PROTOCOL_NSHEAD_JSON_VALUE, encoding));
             protocols.addAll(protocolMap.values());
             protocolNum = protocols.size();
             isInit = true;
@@ -84,10 +88,17 @@ public class ProtocolManager {
 
     public Protocol getProtocol(Integer protocolType) {
         Protocol protocol = protocolMap.get(protocolType);
-        if (protocol == null) {
-            throw new RuntimeException("protocol not exist, type=" + protocolType);
+        if (protocol != null) {
+            return protocol;
         }
-        return protocol;
+
+        // 不共存协议判断
+        // 如果有例如Stargate的协议，可能存在冲突情况，在指明协议的情况，使用类加载机制生产协议单例
+        if (Options.ProtocolType.PROTOCOL_STARGATE_VALUE == protocolType) {
+            return UncoexistenceStargate.INSTANCE.getProtocol();
+        }
+
+        throw new RuntimeException("protocol not exist, type=" + protocolType);
     }
 
     public Map<Integer, Protocol> getProtocolMap() {
@@ -100,5 +111,16 @@ public class ProtocolManager {
 
     public int getProtocolNum() {
         return protocolNum;
+    }
+
+    @Getter
+    enum UncoexistenceStargate {
+        INSTANCE;
+
+        private Protocol protocol;
+
+        UncoexistenceStargate() {
+            protocol = new StargateRpcProtocol();
+        }
     }
 }

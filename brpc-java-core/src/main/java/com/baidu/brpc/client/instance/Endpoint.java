@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 Baidu, Inc. All Rights Reserved.
+ * Copyright (c) 2019 Baidu, Inc. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,34 +13,40 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package com.baidu.brpc.client.endpoint;
+package com.baidu.brpc.client.instance;
 
 import org.apache.commons.lang3.Validate;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
+import lombok.Getter;
+import lombok.Setter;
+
 /**
  * Created by wenweihu86 on 2017/5/17.
  */
-public class EndPoint {
-    String ip;
-    int port;
+@Getter
+@Setter
+public class Endpoint {
 
-    public EndPoint(String ip, int port) {
+    private String ip;
+
+    private int port;
+
+    public Endpoint() {
+    }
+
+    public Endpoint(String ip, int port) {
         this.ip = ip;
         this.port = port;
     }
 
-    /**
-     * @param hostPort format like "127.0.0.1:8002"
-     * @return {@link EndPoint}
-     */
-    public static EndPoint parseFrom(String hostPort) {
-        Validate.notEmpty(hostPort);
-        String[] splits = hostPort.split(":");
-        EndPoint endPoint = new EndPoint(splits[0], Integer.valueOf(splits[1]));
-        return endPoint;
+    public Endpoint(String address) {
+        Validate.notEmpty(address);
+        String[] splits = address.split(":");
+        Validate.isTrue(2 == splits.length);
+        this.ip = splits[0];
+        this.port = Integer.valueOf(splits[1]);
     }
 
     @Override
@@ -54,8 +60,8 @@ public class EndPoint {
     @Override
     public boolean equals(Object object) {
         boolean flag = false;
-        if (object != null && EndPoint.class.isAssignableFrom(object.getClass())) {
-            EndPoint rhs = (EndPoint) object;
+        if (object != null && Endpoint.class.isAssignableFrom(object.getClass())) {
+            Endpoint rhs = (Endpoint) object;
             flag = new EqualsBuilder()
                     .append(ip, rhs.ip)
                     .append(port, rhs.port)
@@ -66,25 +72,7 @@ public class EndPoint {
 
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder();
-        sb.append(ip).append(":").append(port);
-        return sb.toString();
-    }
-
-    public String getIp() {
-        return ip;
-    }
-
-    public void setIp(String ip) {
-        this.ip = ip;
-    }
-
-    public int getPort() {
-        return port;
-    }
-
-    public void setPort(int port) {
-        this.port = port;
+        return String.format("EndPoint{\'%s:%d\'}", ip, port);
     }
 
 }

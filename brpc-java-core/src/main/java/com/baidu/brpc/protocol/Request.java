@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 Baidu, Inc. All Rights Reserved.
+ * Copyright (c) 2019 Baidu, Inc. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,15 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.baidu.brpc.protocol;
 
 import java.lang.reflect.Method;
 import java.util.Map;
+import java.util.Set;
 
+import com.baidu.brpc.RpcContext;
 import com.baidu.brpc.RpcMethodInfo;
+import com.baidu.brpc.client.RpcCallback;
+import com.baidu.brpc.client.channel.BrpcChannel;
 import com.baidu.brpc.exceptions.RpcException;
-import com.baidu.brpc.protocol.nshead.NSHeadMeta;
+import com.baidu.brpc.naming.SubscribeInfo;
+import com.baidu.brpc.protocol.nshead.NSHead;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
@@ -69,9 +73,9 @@ public interface Request {
 
     void setArgs(Object[] newArgs);
 
-    Map<String, String> getKvAttachment();
+    Map<String, Object> getKvAttachment();
 
-    void setKvAttachment(Map<String, String> requestKvAttachment);
+    void setKvAttachment(Map<String, Object> requestKvAttachment);
 
     ByteBuf getBinaryAttachment();
 
@@ -89,13 +93,17 @@ public interface Request {
 
     void setChannel(Channel channel);
 
-    NSHeadMeta getNsHeadMeta();
+    Set<BrpcChannel> getSelectedInstances();
 
-    void setNsHeadMeta(NSHeadMeta nsHeadMeta);
+    void setSelectedInstances(Set<BrpcChannel> selectedInstances);
 
-    Request addRefCnt();
+    NSHead getNsHead();
 
-    void delRefCnt();
+    void setNsHead(NSHead nsHead);
+
+    Request retain();
+
+    void release();
 
     void reset();
 
@@ -103,4 +111,31 @@ public interface Request {
 
     void setAuth(String auth);
 
+    Long getTraceId();
+
+    void setTraceId(Long traceId);
+
+    Long getSpanId();
+
+    void setSpanId(Long spanId);
+
+    Long getParentSpanId();
+
+    void setParentSpanId(Long parentSpanId);
+
+    RpcContext getRpcContext();
+
+    void setRpcContext(RpcContext rpcContext);
+
+    RpcCallback getCallback();
+
+    void setCallback(RpcCallback callback);
+
+    String getServiceTag();
+
+    void setServiceTag(String serviceTag);
+
+    SubscribeInfo getSubscribeInfo();
+
+    void setSubscribeInfo(SubscribeInfo subscribeInfo);
 }

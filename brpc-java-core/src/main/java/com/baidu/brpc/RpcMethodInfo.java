@@ -16,17 +16,19 @@
 
 package com.baidu.brpc;
 
-import com.baidu.brpc.buffer.DynamicCompositeByteBuf;
-import com.baidu.brpc.protocol.nshead.NSHeadMeta;
-import com.baidu.brpc.utils.RpcMetaUtils;
-import com.google.protobuf.CodedOutputStream;
-import io.netty.buffer.ByteBuf;
-import lombok.Getter;
-import lombok.Setter;
-
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
+
+import com.baidu.brpc.buffer.DynamicCompositeByteBuf;
+import com.baidu.brpc.protocol.nshead.NSHeadMeta;
+import com.baidu.brpc.utils.RpcMetaUtils;
+import com.baidu.brpc.utils.ThreadPool;
+import com.google.protobuf.CodedOutputStream;
+
+import io.netty.buffer.ByteBuf;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * rpc method info is parsed when application initialized.
@@ -38,18 +40,23 @@ public class RpcMethodInfo {
     protected Method method;
     protected String serviceName;
     protected String methodName;
-    protected Class[] inputClasses;
+    protected Type[] inputClasses;
     protected Type outputClass;
     protected NSHeadMeta nsHeadMeta;
     // instance of interface which method belongs to
     protected Object target;
+    protected ThreadPool threadPool;
 
     public RpcMethodInfo(Method method) {
         RpcMetaUtils.RpcMetaInfo metaInfo = RpcMetaUtils.parseRpcMeta(method);
         this.serviceName = metaInfo.getServiceName();
         this.methodName = metaInfo.getMethodName();
         this.method = method;
-        this.inputClasses = method.getParameterTypes();
+        Type[] inputClasses = method.getGenericParameterTypes();
+        if (inputClasses.length <= 0) {
+            throw new IllegalArgumentException("invalid params");
+        }
+        this.inputClasses = inputClasses;
         this.outputClass = method.getGenericReturnType();
         this.nsHeadMeta = method.getAnnotation(NSHeadMeta.class);
     }

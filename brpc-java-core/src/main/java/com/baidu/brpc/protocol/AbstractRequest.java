@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 Baidu, Inc. All Rights Reserved.
+ * Copyright (c) 2019 Baidu, Inc. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,16 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.baidu.brpc.protocol;
 
 import java.lang.reflect.Method;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
+import com.baidu.brpc.RpcContext;
 import com.baidu.brpc.RpcMethodInfo;
+import com.baidu.brpc.client.RpcCallback;
+import com.baidu.brpc.client.channel.BrpcChannel;
 import com.baidu.brpc.exceptions.RpcException;
-import com.baidu.brpc.protocol.nshead.NSHeadMeta;
+import com.baidu.brpc.naming.SubscribeInfo;
+import com.baidu.brpc.protocol.nshead.NSHead;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
@@ -32,7 +35,6 @@ import lombok.Setter;
 @Setter
 @Getter
 public abstract class AbstractRequest implements Request {
-
     private Object msg;
     private long logId;
     private Object target;
@@ -41,13 +43,26 @@ public abstract class AbstractRequest implements Request {
     private String serviceName;
     private String methodName;
     private Object[] args;
-    private NSHeadMeta nsHeadMeta;
-    private Map<String, String> kvAttachment = new HashMap<String, String>();
+    private NSHead nsHead;
+    private Map<String, Object> kvAttachment;
     private ByteBuf binaryAttachment;
     private int compressType;
     private RpcException exception;
     private Channel channel;
+    private Set<BrpcChannel> selectedInstances;
     private String auth;
+    private Long traceId;
+    private Long spanId;
+    private Long parentSpanId;
+    private RpcContext rpcContext;
+    private RpcCallback callback;
+    private String serviceTag;
+
+    /**
+     * 订阅信息，客户端请求时，将订阅的服务信息存入
+     * - StarGate使用
+     */
+    private SubscribeInfo subscribeInfo;
 
     @Override
     public void reset() {
@@ -56,19 +71,26 @@ public abstract class AbstractRequest implements Request {
         target = null;
         targetMethod = null;
         rpcMethodInfo = null;
-        serviceName = "";
-        methodName = "";
+        serviceName = null;
+        methodName = null;
         args = null;
-        nsHeadMeta = null;
-        kvAttachment.clear();
-        delRefCntForServer();
+        nsHead = null;
+        kvAttachment = null;
+        binaryAttachment = null;
         compressType = 0;
         exception = null;
         channel = null;
+        selectedInstances = null;
+        traceId = null;
+        spanId = null;
+        parentSpanId = null;
+        rpcContext = null;
+        callback = null;
+        serviceTag = null;
     }
 
     @Override
-    public Request addRefCnt() {
+    public Request retain() {
         if (binaryAttachment != null) {
             binaryAttachment.retain();
         }
@@ -76,18 +98,9 @@ public abstract class AbstractRequest implements Request {
     }
 
     @Override
-    public void delRefCnt() {
+    public void release() {
         if (binaryAttachment != null && binaryAttachment.refCnt() > 0) {
             binaryAttachment.release();
-        }
-    }
-
-    public void delRefCntForServer() {
-        if (binaryAttachment != null) {
-            int refCnt = binaryAttachment.refCnt();
-            if (refCnt > 0) {
-                binaryAttachment.release();
-            }
             binaryAttachment = null;
         }
     }

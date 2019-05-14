@@ -19,7 +19,8 @@ package com.baidu.brpc;
 import com.baidu.brpc.buffer.DynamicCompositeByteBuf;
 import com.baidu.brpc.client.FastFutureStore;
 import com.baidu.brpc.client.RpcFuture;
-import com.baidu.brpc.client.channel.BrpcChannelGroup;
+import com.baidu.brpc.client.channel.BrpcChannel;
+import com.baidu.brpc.client.channel.ChannelType;
 import com.baidu.brpc.exceptions.RpcException;
 import com.baidu.brpc.protocol.Protocol;
 import com.baidu.brpc.protocol.Response;
@@ -39,9 +40,7 @@ public class ChannelInfo {
     private static final AttributeKey<ChannelInfo> SERVER_CHANNEL_KEY = AttributeKey.valueOf("server_key");
 
     private Channel channel;
-    private BrpcChannelGroup channelGroup;
-    // 是否来自于业务RpcContext手动设置的
-    private boolean isFromRpcContext = false;
+    private BrpcChannel channelGroup;
     private Protocol protocol;
     private long logId;
     private FastFutureStore pendingRpc;
@@ -102,9 +101,10 @@ public class ChannelInfo {
 
     /**
      * return channel when fail
+     * @param channelType
      */
-    public void handleRequestFail(boolean isLongConnection) {
-        if (isLongConnection) {
+    public void handleRequestFail(ChannelType channelType) {
+        if (channelType != ChannelType.SHORT_CONNECTION) {
             channelGroup.incFailedNum();
             returnChannelAfterRequest();
         } else {
@@ -121,9 +121,6 @@ public class ChannelInfo {
     }
 
     private void returnChannelAfterRequest() {
-        if (isFromRpcContext()) {
-            return;
-        }
         if (protocol.returnChannelBeforeResponse()) {
             channelGroup.returnChannel(channel);
         }
@@ -145,9 +142,6 @@ public class ChannelInfo {
     }
 
     private void returnChannelAfterResponse() {
-        if (isFromRpcContext()) {
-            return;
-        }
         if (!protocol.returnChannelBeforeResponse()) {
             channelGroup.returnChannel(channel);
         }
@@ -157,9 +151,6 @@ public class ChannelInfo {
      * channel不可用时或者handler出现异常时处理逻辑
      */
     public void handleChannelException(RpcException ex) {
-        if (isFromRpcContext()) {
-            return;
-        }
         if (channelGroup != null) {
             channelGroup.removeChannel(channel);
         }
